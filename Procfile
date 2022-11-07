@@ -1,1 +1,1 @@
-web: sh setup.sh && streamlit run C:/Users/Lenovo/PycharmProjects/whatsapp-chat-analyser/venv/app.py
+web: sh setup.sh && streamlit run app.py
