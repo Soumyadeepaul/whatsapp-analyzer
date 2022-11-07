@@ -1,0 +1,7 @@
+streamlit
+urlextract
+matplotlib
+pandas
+wordcloud
+seaborn
+datetime
