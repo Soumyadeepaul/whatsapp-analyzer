@@ -7,7 +7,7 @@ from wordcloud import WordCloud,STOPWORDS
 from collections import Counter
 import seaborn as sns
 import datetime
-from PIL import Image
+
 
 
 
@@ -102,8 +102,6 @@ def heatmap(selected_user,df):
     activity_heatmap=df.pivot_table(index='day_name', columns='hour_range', values='message', aggfunc='count').fillna(0)
     return activity_heatmap
 
-image=Image.open('whatsapp.jpg ')
-st.sidebar.image(image)
 st.sidebar.title("Whatsapp Chat Analyzer")
 st.sidebar.write('This is a whatsapp chat analyzer which will help you to find the insights from your convertation with other.. Are you excited!!')
 st.sidebar.write("Your data will not be saved... We respect your privacy")
