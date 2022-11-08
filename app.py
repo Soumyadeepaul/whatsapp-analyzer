@@ -7,8 +7,8 @@ from wordcloud import WordCloud,STOPWORDS
 from collections import Counter
 import seaborn as sns
 import datetime
-
-
+from PIL import Image
+import gspread
 
 
 #function
@@ -102,6 +102,8 @@ def heatmap(selected_user,df):
     activity_heatmap=df.pivot_table(index='day_name', columns='hour_range', values='message', aggfunc='count').fillna(0)
     return activity_heatmap
 
+image=Image.open('whatsapp.jpg ')
+st.sidebar.image(image)
 st.sidebar.title("Whatsapp Chat Analyzer")
 st.sidebar.write('This is a whatsapp chat analyzer which will help you to find the insights from your convertation with other.. Are you excited!!')
 st.sidebar.write("Your data will not be saved... We respect your privacy")
@@ -139,7 +141,7 @@ if uploaded_file is not None:
         specific_date=st.sidebar.selectbox("Pick the date",c)
         if specific_date != 'Overall':
             df=df[df['day']==specific_date]
-            df=df[df['users']==selected_user]
+
 
 
     if st.sidebar.button("Show Analysis"):
@@ -266,10 +268,12 @@ if uploaded_file is not None:
     name=st.sidebar.text_input("Enter you name")
     feedbacks=st.sidebar.text_area("Please enter your feedback about the website")
     if st.sidebar.button("Submit"):
-        data = pd.read_csv('feedbacks.csv')
-        df = pd.DataFrame([[name,feedbacks]], columns=['name','Feeds'], index=[0])
-        data = data.append(df, ignore_index=True)
-        data.to_csv('feedbacks.csv', index=False)
+        sa = gspread.service_account(filename='feedbacks-368005-cba6d4b54093.json')
+        sh = sa.open('Feedbacks')
+
+        wks = sh.worksheet('Sheet1')
+
+        wks.insert_row([name,feedbacks], wks.row_count)
         st.markdown("Thank You for your feedback")
 st.sidebar.subheader("Created by Paul")
 
