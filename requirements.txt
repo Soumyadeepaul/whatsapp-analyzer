@@ -5,3 +5,4 @@ pandas
 wordcloud
 seaborn
 datetime
+gspread
