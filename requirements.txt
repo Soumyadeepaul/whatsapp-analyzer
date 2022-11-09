@@ -6,3 +6,4 @@ wordcloud
 seaborn
 datetime
 gspread
+emojis
