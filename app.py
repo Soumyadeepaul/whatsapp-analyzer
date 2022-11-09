@@ -9,15 +9,42 @@ import seaborn as sns
 import datetime
 from PIL import Image
 import gspread
-
+import emojis
 #function
+
+def emoji_analyse(selected_user,df):
+    emoji_list = []
+    for msg in df['message']:
+        e = emojis.get(msg)
+        if e != set():
+            emoji_list.extend(e)
+    emoji_df=pd.DataFrame.from_dict(Counter(emoji_list),orient='index').reset_index()
+    emoji_df = emoji_df.sort_values(by=[0], ascending=False).reset_index()
+    emoji_df.rename(columns={'index':"Emojis",0:"Count"},inplace=True)
+    emoji_df=emoji_df.drop(['level_0'], axis=1)
+
+    return emoji_df
+
 def helper(selected_user,df):
-    if selected_user!='Overall':
-        df=df[df['users'] == selected_user]
+
     num_msg = df.shape[0]
     words = []
-    for msg in df['message']:
-        words.extend(msg.split())
+    emoji_list=emoji_analyse(selected_user,df)
+    emoji_unique=emoji_list['Emojis'].unique()
+    adder=''
+    temp_alp=[]
+    for word in df['message']:
+
+        for alp in word:
+            if alp not in emoji_unique:
+                adder+=alp
+            else:
+                words.append(alp)
+        temp_alp.append(adder)
+        adder=''
+
+        words.extend(temp_alp[0].split())
+        temp_alp=[]
     msg_count = len(words)
 
     count = df[df['message'] == '<Media omitted>\n'].shape[0]
@@ -32,8 +59,6 @@ def helper(selected_user,df):
 
 #wordcloud funtion
 def create_wordcloud(selected_user,df):
-    if selected_user!='Overall':
-        df=df[df.users==selected_user]
     stopwords=set(STOPWORDS)
     df = df[df['message'] != '<Media omitted>\n']
     df = df[df['message'] != 'Waiting for this message']
@@ -44,8 +69,6 @@ def create_wordcloud(selected_user,df):
 
 #top 20 most use words
 def most_used_words(selected_user,df):
-    if selected_user!='Overall':
-        df=df[df['users'] == selected_user]
     new_df = df[df['users'] != 'group_notification']
     new_df = new_df[new_df['message'] != '<Media omitted>\n']
     new_df = new_df[new_df['message'] != 'Waiting for this message']
@@ -53,37 +76,37 @@ def most_used_words(selected_user,df):
 
     words = []
     list1=set(STOPWORDS)
-    for msg in new_df['message']:
-        for word in msg.lower().split():
-            if word not in list1:
-                words.append(word)
+    emoji_list=emoji_analyse(selected_user,df)
+    emoji_unique = emoji_list['Emojis'].unique()
+    temp_alp=[]
+    adder=''
+    final_words=[]
 
-    count_df = pd.DataFrame(Counter(words).most_common(20))
+    for msg in new_df['message']:
+        for word in msg:
+            if word not in emoji_unique:
+                adder+=word
+
+        temp_alp.append(adder)
+        adder = ''
+        words.extend(temp_alp[0].split())
+        temp_alp = []
+
+    for i in words:
+        if i not in list1:
+            final_words.append(i)
+    count_df = pd.DataFrame(Counter(final_words).most_common(20))
     count_df = count_df.rename(columns={0: 'Words', 1: 'Count'})
 
     return count_df
 def monthly_active(selected_user,df):
-    if selected_user!='Overall':
-        df=df[df['users'] == selected_user]
     df['month_num'] = df['date'].dt.month
     timeline = df.groupby(['year', 'month']).count()['message'].reset_index()
     return timeline
 
 
 
-#def emoji_analyse(selected_user,df):
-#    if selected_user!='Overall':
-#        df=df[df['users'] == selected_user]
-#   emojis=[]
-#   for msg in df['message']:
-#       emojis.extend([c for c in msg if c in emoji.UNICODE_EMOJI['en']])
-#   emoji_df=pd.DataFrame(Counter(emojis).most_common(len(Counter(emojis))))
-#    return emoji_df
-
 def day_analysis(selected_user,df):
-    if selected_user!='Overall':
-        df=df[df['users'] == selected_user]
-
     new_df = pd.DataFrame(df.groupby(['day_name']).count()['message'].reset_index())
     list = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     list1 = []
@@ -96,8 +119,6 @@ def day_analysis(selected_user,df):
     return new1_df
 
 def heatmap(selected_user,df):
-    if selected_user!='Overall':
-        df=df[df['users'] == selected_user]
     activity_heatmap=df.pivot_table(index='day_name', columns='hour_range', values='message', aggfunc='count').fillna(0)
     return activity_heatmap
 
@@ -138,7 +159,8 @@ if uploaded_file is not None:
         specific_date=st.sidebar.selectbox("Pick the date",c)
         if specific_date != 'Overall':
             df=df[df['day']==specific_date]
-
+    if selected_user!='Overall':
+        df=df[df['users'] == selected_user]
 
 
     if st.sidebar.button("Show Analysis"):
@@ -213,15 +235,16 @@ if uploaded_file is not None:
                 st.pyplot(fig)
 
             #Emoji
-            #st.title("Emoji")
-            #emoji_df = emoji_analyse(selected_user, df)
-            #col1, col2 = st.columns(2)
-            #fig, ax = plt.subplots()
-            #with col1:
-            #    st.header('Emoji_Data')
-            #    st.dataframe(emoji_df)
-            #with col2:
-            #   pass
+            st.title("Emoji")
+            emoji_df = emoji_analyse(selected_user, df)
+            emoji_df=emoji_df.drop(emoji_df.index[20:len(emoji_df['Emojis'])])
+            col1, col2 = st.columns(2)
+            fig, ax = plt.subplots()
+            with col1:
+                st.header('Emoji_Data')
+                st.dataframe(emoji_df)
+            with col2:
+               pass
             col1,col2=st.columns(2)
             with col1:
                 st.title('Monthly Activity')
@@ -273,3 +296,6 @@ if uploaded_file is not None:
         wks.insert_row([name,feedbacks], wks.row_count)
         st.markdown("Thank You for your feedback")
 st.sidebar.subheader("Created by Paul")
+
+
+
