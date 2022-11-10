@@ -9,7 +9,10 @@ import seaborn as sns
 import datetime
 from PIL import Image
 import gspread
-import emojis
+try:
+    import emojis
+except:
+    pass
 #function
 
 def emoji_analyse(selected_user,df):
