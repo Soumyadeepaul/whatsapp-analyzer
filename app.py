@@ -9,6 +9,7 @@ import seaborn as sns
 import datetime
 from PIL import Image
 import gspread
+import sentiment
 try:
     import emojis
 except:
@@ -21,12 +22,16 @@ def emoji_analyse(selected_user,df):
         e = emojis.get(msg)
         if e != set():
             emoji_list.extend(e)
-    emoji_df=pd.DataFrame.from_dict(Counter(emoji_list),orient='index').reset_index()
-    emoji_df = emoji_df.sort_values(by=[0], ascending=False).reset_index()
-    emoji_df.rename(columns={'index':"Emojis",0:"Count"},inplace=True)
-    emoji_df=emoji_df.drop(['level_0'], axis=1)
-
-    return emoji_df
+    if len(emoji_list)>0:
+        emoji_df=pd.DataFrame.from_dict(Counter(emoji_list),orient='index').reset_index()
+        emoji_df = emoji_df.sort_values(by=[0], ascending=False).reset_index()
+        emoji_df.rename(columns={'index':"Emojis",0:"Count"},inplace=True)
+        emoji_df=emoji_df.drop(['level_0'], axis=1)
+        print(emoji_df)
+        return emoji_df
+    else:
+        emoji_df=pd.DataFrame(columns=['Emojis'])
+        return emoji_df
 
 def helper(selected_user,df):
 
@@ -99,7 +104,11 @@ def most_used_words(selected_user,df):
         if i not in list1:
             final_words.append(i)
     count_df = pd.DataFrame(Counter(final_words).most_common(20))
-    count_df = count_df.rename(columns={0: 'Words', 1: 'Count'})
+    if len(count_df)>0:
+        count_df = count_df.rename(columns={0: 'Words', 1: 'Count'})
+    else:
+        count_df=pd.DataFrame(columns=['Words','Count'])
+
 
     return count_df
 def monthly_active(selected_user,df):
@@ -143,7 +152,10 @@ if uploaded_file is not None:
 
     #fetch unique user
     users_list=df.users.unique().tolist()
-    users_list.remove('group_notification')
+    try:
+        users_list.remove('group_notification')
+    except:
+        pass
     users_list.sort()
     users_list.insert(0,"Overall")
     selected_user=st.sidebar.selectbox("Show analysis wrt: ",users_list)
@@ -288,6 +300,31 @@ if uploaded_file is not None:
             ax.imshow(df_wc)
             plt.axis('off')
             st.pyplot(fig)
+
+            # sentiment
+            st.title('Sentiment Analysis')
+            emotion_df = sentiment.sentiment_score(df)
+            emotion_df = emotion_df.reset_index()
+            col1, col2= st.columns(2)
+            with col1:
+                for index, row in emotion_df.iterrows():
+                    st.subheader(row['users'])
+            with col2:
+                for index, row in emotion_df.iterrows():
+                    st.subheader(row['emotion'])
+            emotion_df=emotion_df[['users','compound','status']]
+            emotion_df=emotion_df.rename(columns={'compound': 'Sentiment'})
+            st.dataframe(emotion_df)
+            if len(emotion_df)==2:
+                emotion_df=emotion_df.sort_values(by=['Sentiment'],ascending=False)
+                emotion_df=emotion_df.reset_index()
+                print(emotion_df)
+                percentage=((emotion_df.loc[0,'Sentiment']-emotion_df.loc[1,'Sentiment'])/emotion_df.loc[1,'Sentiment'])*100
+                percentage=round(percentage,2)
+                statement='User '+str(emotion_df['users'][0])+' is more positive than User '+ str(emotion_df['users'][1])+ ' by '+ str(percentage)+'%.'
+                st.text(statement)
+
+
     name=st.sidebar.text_input("Enter you name")
     feedbacks=st.sidebar.text_area("Please enter your feedback about the website")
     if st.sidebar.button("Submit"):
@@ -299,6 +336,3 @@ if uploaded_file is not None:
         wks.insert_row([name,feedbacks], wks.row_count)
         st.markdown("Thank You for your feedback")
 st.sidebar.subheader("Created by Paul")
-
-
-
