@@ -305,13 +305,10 @@ if uploaded_file is not None:
             st.title('Sentiment Analysis')
             emotion_df = sentiment.sentiment_score(df)
             emotion_df = emotion_df.reset_index()
-            col1, col2= st.columns(2)
+            col1= st.columns(1)
             with col1:
                 for index, row in emotion_df.iterrows():
-                    st.subheader(row['users'])
-            with col2:
-                for index, row in emotion_df.iterrows():
-                    st.subheader(row['emotion'])
+                    st.subheader(row['users'] +" "+ row['emotion'])
             emotion_df=emotion_df[['users','compound','status']]
             emotion_df=emotion_df.rename(columns={'compound': 'Sentiment'})
             st.dataframe(emotion_df)
