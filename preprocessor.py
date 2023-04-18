@@ -9,8 +9,16 @@ def preprocess(data):
     #creating a dataframe df with 2 columns
     df = pd.DataFrame({'user_message': messages, 'date': dates})
     #converting date time into proper formate using to_datetime function
-    df['date'] = pd.to_datetime(df['date'], format='%d/%m/%Y, %H:%M - ')
-
+    try:
+        df['date'] = pd.to_datetime(df['date'], format='%d/%m/%Y, %H:%M - ')
+    except:
+        try:
+            df['date'] = pd.to_datetime(df['date'], format='%d/%m/%y, %H:%M - ')
+        except:
+            try:
+                df['date'] = pd.to_datetime(df['date'], format='%m/%d/%y, %H:%M - ')
+            except:
+                df['date'] = pd.to_datetime(df['date'], format='%m/%d/%Y, %H:%M - ')
     # seperate user and messages
     users = []
     messages = []
